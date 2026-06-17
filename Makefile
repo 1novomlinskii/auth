@@ -1,8 +1,9 @@
-.PHONY: run build test lint make-local-up make-local-down make-local-clear
 
+.PHONY: run
 run:
 	go run ./cmd/auth/
 
+.PHONY: build
 build:
 	go build -ldflags="-s -w" -o bin/auth ./cmd/auth/
 
@@ -18,18 +19,16 @@ lint:
 test:
 	go test -v -race -count=1 ./...
 
-# Usage:
-#   make-local-up            — docker compose up -d
-#   make-local-up 1          — docker compose up -d --build
-make-local-up:
-	@if [ "$(filter-out $@,$(MAKECMDGOALS))" = "1" ]; then \
-		docker compose up -d --build; \
-	else \
-		docker compose up -d; \
-	fi
+# Поднимает окружение для локальной разработки (make up-local-dep B=1 для build флага)
+.PHONY: local-up
+local-up:
+	 $(COMPOSE_CMD) up $(if $(B),--build,)
 
-make-local-down:
+.PHONY: local-down
+local-down:
 	docker compose down
 
-make-local-clear:
+.PHONY: local-clear
+local-clear:
 	docker compose down -v
+	
