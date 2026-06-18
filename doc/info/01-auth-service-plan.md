@@ -82,7 +82,7 @@
 
 | День | Задача | Время |
 |------|--------|-------|
-| 1 | **Миграция v1:** `users`, `user_identities`, `user_local_passwords` | 2ч |
+| 1 | **Миграция v1:** `users`, `user_identities`, `user_password_hash` | 2ч |
 | 2 | **Миграция v2:** `user_sessions`, `api_keys`, `roles`, `user_roles` | 2ч |
 | 3 | pgx pool: подключение, health check, конфигурация пула | 1.5ч |
 | 4 | UserRepository: `Create`, `GetByID`, `GetByEmail`, `GetByIdentity` | 2ч |
@@ -296,9 +296,9 @@
 ```sql
 -- 1. Users (ядро)
 CREATE TABLE users (
-    user_id       UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id       UUID PRIMARY KEY DEFAULT uuidv7(),
     tenant_id     UUID NOT NULL DEFAULT '00000000-0000-0000-0000-000000000001',
-    global_handle VARCHAR(50) UNIQUE NOT NULL,
+    login         VARCHAR(50) UNIQUE NOT NULL,
     display_name  VARCHAR(255),
     email_primary VARCHAR(255) UNIQUE NOT NULL,
     locale        VARCHAR(10),
@@ -310,7 +310,7 @@ CREATE TABLE users (
 
 -- 2. User identities (OAuth2/SSO — Google, GitHub, Apple)
 CREATE TABLE user_identities (
-    identity_id      UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    identity_id      UUID PRIMARY KEY DEFAULT uuidv7(),
     user_id          UUID NOT NULL REFERENCES users(user_id),
     provider         VARCHAR(20) NOT NULL,      -- 'google', 'github', 'apple'
     provider_user_id VARCHAR(255) NOT NULL,      -- sub от провайдера
@@ -323,17 +323,19 @@ CREATE TABLE user_identities (
 );
 CREATE INDEX idx_identities_lookup ON user_identities (provider, provider_user_id);
 
--- 3. Local passwords (только для email+password регистрации)
-CREATE TABLE user_local_passwords (
-    user_id       UUID PRIMARY KEY REFERENCES users(user_id),
-    password_hash TEXT NOT NULL,                  -- bcrypt cost=12
-    created_at    TIMESTAMPTZ DEFAULT NOW(),
-    updated_at    TIMESTAMPTZ
+-- 3. Password hash (только для email+password регистрации)
+CREATE TABLE user_password_hash (
+    user_id             UUID PRIMARY KEY REFERENCES users(user_id),
+    password_hash       TEXT NOT NULL,                  -- bcrypt cost=12
+    reset_token_hash    TEXT,                           -- SHA-256 хеш токена сброса
+    reset_token_expires_at TIMESTAMPTZ,                 -- срок действия токена сброса
+    created_at          TIMESTAMPTZ DEFAULT NOW(),
+    updated_at          TIMESTAMPTZ
 );
 
 -- 4. Sessions (refresh tokens)
 CREATE TABLE user_sessions (
-    session_id    UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    session_id    UUID PRIMARY KEY DEFAULT uuidv7(),
     user_id       UUID NOT NULL REFERENCES users(user_id),
     identity_id   UUID REFERENCES user_identities(identity_id),
     refresh_token TEXT UNIQUE NOT NULL,           -- SHA-256 хеш
@@ -347,7 +349,7 @@ CREATE INDEX idx_sessions_user ON user_sessions (user_id) WHERE revoked_at IS NU
 
 -- 5. API keys (service-to-service)
 CREATE TABLE api_keys (
-    api_key_id    UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    api_key_id    UUID PRIMARY KEY DEFAULT uuidv7(),
     tenant_id     UUID NOT NULL,
     service_name  TEXT NOT NULL,
     key_prefix    VARCHAR(8) NOT NULL,            -- первые 8 символов ключа (для идентификации)
@@ -362,7 +364,7 @@ CREATE TABLE api_keys (
 
 -- 6. Roles & Permissions (RBAC)
 CREATE TABLE roles (
-    role_id       UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    role_id       UUID PRIMARY KEY DEFAULT uuidv7(),
     tenant_id     UUID NOT NULL,
     name          TEXT NOT NULL,                  -- 'admin', 'moderator', 'user'
     permissions   TEXT[] NOT NULL DEFAULT '{}',   -- ['users:delete', 'posts:moderate']

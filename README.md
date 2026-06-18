@@ -81,7 +81,7 @@ curl localhost:8080/health
 
 - **users** — учётные записи
 - **user_identities** — OAuth2 identity (Google, GitHub и т.д.)
-- **user_local_passwords** — хеши паролей (bcrypt)
+- **user_password_hash** — хеши паролей (bcrypt)
 - **user_sessions** — refresh токены
 - **api_keys** — ключи для service-to-service
 - **roles** — роли + permissions (RBAC)

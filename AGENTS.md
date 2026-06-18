@@ -63,7 +63,7 @@
 ├── migrations/              # SQL миграции Goose
 │   ├── 001_users.sql
 │   ├── 002_user_identities.sql
-│   ├── 003_user_local_passwords.sql
+│   ├── 003_user_password.sql
 │   ├── 004_user_sessions.sql
 │   ├── 005_api_keys.sql
 │   ├── 006_roles.sql

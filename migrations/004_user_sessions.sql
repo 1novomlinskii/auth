@@ -1,6 +1,6 @@
 -- +goose Up
 CREATE TABLE user_sessions (
-    session_id    UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    session_id    UUID PRIMARY KEY DEFAULT uuidv7(),
     user_id       UUID NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
     identity_id   UUID REFERENCES user_identities(identity_id) ON DELETE SET NULL,
     refresh_token TEXT UNIQUE NOT NULL,

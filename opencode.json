@@ -5,6 +5,9 @@
   ],
   "permission": {
     "bash": {
+    "go*": "allow",
+    "rg*": "allow",
+    "mkdir*": "allow",
     "sudo*": "deny",
     "rm": "ask",
     "rm *": "deny",

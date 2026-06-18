@@ -1,6 +1,6 @@
 -- +goose Up
 CREATE TABLE user_identities (
-    identity_id      UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    identity_id      UUID PRIMARY KEY DEFAULT uuidv7(),
     user_id          UUID NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
     provider         VARCHAR(20) NOT NULL,
     provider_user_id VARCHAR(255) NOT NULL,

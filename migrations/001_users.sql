@@ -1,8 +1,8 @@
 -- +goose Up
 CREATE TABLE users (
-    user_id       UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id       UUID PRIMARY KEY DEFAULT uuidv7(),
     tenant_id     UUID NOT NULL DEFAULT '00000000-0000-0000-0000-000000000001',
-    global_handle VARCHAR(50) UNIQUE NOT NULL,
+    login         VARCHAR(50) UNIQUE NOT NULL,
     display_name  VARCHAR(255),
     email_primary VARCHAR(255) UNIQUE NOT NULL,
     locale        VARCHAR(10),

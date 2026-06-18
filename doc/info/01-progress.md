@@ -28,9 +28,9 @@
 - [x] `GET /health` — пингует БД, возвращает `{"status":"ok"}` (200) или `{"status":"unavailable"}` (503)
 
 ### Миграции (Goose, 7 таблиц)
-- [x] `001_users.sql` — users (UUID PK, tenant_id, global_handle, email и т.д.)
+- [x] `001_users.sql` — users (UUID PK, tenant_id, login, email и т.д.)
 - [x] `002_user_identities.sql` — OAuth2 identities (Google/GitHub)
-- [x] `003_user_local_passwords.sql` — bcrypt password hash
+- [x] `003_user_password.sql` — bcrypt password hash
 - [x] `004_user_sessions.sql` — refresh tokens с partial index
 - [x] `005_api_keys.sql` — service-to-service ключи
 - [x] `006_roles.sql` — RBAC роли с permissions массивом
@@ -39,7 +39,7 @@
 ### Docker
 - [x] `Dockerfile` — multistage (golang:1.23-alpine → alpine:3.19 + curl)
 - [x] `.dockerignore`
-- [x] `docker-compose.yml` — app + postgres:16 + redis:7 с healthcheck
+- [x] `docker-compose.yml` — app + postgres:18 + redis:7 с healthcheck
 
 ### Makefile
 - [x] `make run` — локальный запуск

@@ -1,6 +1,6 @@
 -- +goose Up
 CREATE TABLE api_keys (
-    api_key_id    UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    api_key_id    UUID PRIMARY KEY DEFAULT uuidv7(),
     tenant_id     UUID NOT NULL,
     service_name  TEXT NOT NULL,
     key_prefix    VARCHAR(8) NOT NULL,

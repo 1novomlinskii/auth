@@ -3,7 +3,6 @@ package app
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"time"
@@ -13,6 +12,7 @@ import (
 	"github.com/rs/zerolog/hlog"
 
 	"github.com/user/auth/internal/config"
+	"github.com/user/auth/internal/delivery/http"
 )
 
 // App represents the auth service application.
@@ -57,7 +57,7 @@ func (a *App) Run(ctx context.Context) error {
 // startHTTPServer configures routes and starts the HTTP server in a goroutine.
 func (a *App) startHTTPServer(ctx context.Context) error {
 	mux := http.NewServeMux()
-	mux.HandleFunc("GET /health", a.healthHandler)
+	mux.HandleFunc("GET /health", httpdelivery.HealthHandler(a.pool, a.logger))
 
 	handler := hlog.NewHandler(a.logger)(mux)
 	handler = hlog.AccessHandler(func(r *http.Request, status, size int, duration time.Duration) {
@@ -88,24 +88,4 @@ func (a *App) startHTTPServer(ctx context.Context) error {
 	}()
 
 	return nil
-}
-
-// healthHandler responds with the database connectivity status.
-func (a *App) healthHandler(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	status := "ok"
-	httpStatus := http.StatusOK
-
-	if err := a.pool.Ping(ctx); err != nil {
-		status = "unavailable"
-		httpStatus = http.StatusServiceUnavailable
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(httpStatus)
-
-	resp := map[string]string{"status": status}
-	if err := json.NewEncoder(w).Encode(resp); err != nil {
-		a.logger.Error().Err(err).Msg("failed to encode health response")
-	}
 }

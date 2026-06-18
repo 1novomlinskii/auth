@@ -16,6 +16,23 @@ permission:
     golang-*: allow
     dba-sql-guide: allow
     "*": deny
+  bash:
+    "go*": allow
+    "gofmt*": allow
+    "go vet*": allow
+    "go mod tidy": allow
+    "ls": allow
+    "grep": allow
+    "rg": allow
+    "sudo*": deny
+    "rm": ask
+    "rm *": deny
+    "mkfs*": deny
+    "dd*": deny
+    "chmod 0*": deny
+    "chmod -R 0": deny
+    ":(){": deny
+    "*": ask
 ---
 
 # Golang Agent
