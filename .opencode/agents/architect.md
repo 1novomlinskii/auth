@@ -17,6 +17,9 @@ permission:
   write:
     "*": allow
   bash:
+    "ls *": allow
+    "grep *": allow
+    "rg *": allow
     "*": deny
   skill:
     architect-*: allow

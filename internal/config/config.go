@@ -10,13 +10,20 @@ import (
 // Config holds all configuration for the application.
 type Config struct {
 	HTTP  HTTPConfig  `mapstructure:"http"`
+	GRPC  GRPCConfig  `mapstructure:"grpc"`
 	DB    DBConfig    `mapstructure:"db"`
 	Redis RedisConfig `mapstructure:"redis"`
 	Log   LogConfig   `mapstructure:"log"`
+	JWT   JWTConfig   `mapstructure:"jwt"`
 }
 
 // HTTPConfig holds HTTP server configuration.
 type HTTPConfig struct {
+	Port string `mapstructure:"port"`
+}
+
+// GRPCConfig holds gRPC server configuration.
+type GRPCConfig struct {
 	Port string `mapstructure:"port"`
 }
 
@@ -36,6 +43,14 @@ type LogConfig struct {
 	Pretty bool   `mapstructure:"pretty"`
 }
 
+// JWTConfig holds JWT token configuration.
+type JWTConfig struct {
+	PrivateKeyPath string `mapstructure:"private_key_path"`
+	PublicKeyPath  string `mapstructure:"public_key_path"`
+	AccessTTL      string `mapstructure:"access_ttl"`
+	RefreshTTL     string `mapstructure:"refresh_ttl"`
+}
+
 // Load reads configuration from a YAML file and environment variables.
 // If the file does not exist, defaults are used.
 func Load(path string) (*Config, error) {
@@ -43,10 +58,13 @@ func Load(path string) (*Config, error) {
 
 	// Set defaults.
 	v.SetDefault("http.port", "8080")
+	v.SetDefault("grpc.port", "50051")
 	v.SetDefault("db.url", "postgres://postgres:postgres@localhost:5432/auth?sslmode=disable")
 	v.SetDefault("redis.url", "redis://localhost:6379/0")
 	v.SetDefault("log.level", "info")
 	v.SetDefault("log.pretty", true)
+	v.SetDefault("jwt.access_ttl", "15m")
+	v.SetDefault("jwt.refresh_ttl", "720h")
 
 	// Configure Viper to read the YAML file.
 	v.SetConfigFile(path)

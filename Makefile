@@ -7,7 +7,12 @@ run:
 build:
 	go build -ldflags="-s -w" -o bin/auth ./cmd/auth/
 
-# Произвести генерацию
+# Генерация proto + qtc
+.PHONY: gen
+gen:
+	buf generate
+	qtc -dir=internal/repository/pg/query
+
 # Проверка линтера. F=1 флаг автофикса
 .PHONY: lint
 lint:
@@ -19,7 +24,7 @@ lint:
 test:
 	go test -v -race -count=1 ./...
 
-# Поднимает окружение для локальной разработки (make up-local-dep B=1 для build флага)
+# Поднимает окружение для локальной разработки (make local-up B=1 для build флага)
 .PHONY: local-up
 local-up:
 	 $(COMPOSE_CMD) up $(if $(B),--build,)

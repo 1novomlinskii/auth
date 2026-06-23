@@ -40,7 +40,7 @@
 
 ---
 
-## `user_password_hash` — Хэши паролей (только для local-регистрации)
+## `user_password` — Хэши паролей (только для local-регистрации)
 
 | Поле | Тип | Описание | Пример |
 |------|-----|----------|--------|
@@ -117,3 +117,55 @@ OAuth-пользователи не имеют записи в этой табл
 | `assigned_at` | TIMESTAMPTZ | Дата назначения | `2026-06-18T10:00:00Z` |
 
 PK: `(user_id, role_id)`
+
+---
+
+## `audit_logs` — Аудит действий (триггерный)
+
+Логируются все INSERT/UPDATE/DELETE через триггеры на каждой таблице.  
+Контекст пользователя пробрасывается через `set_user($1)` в DML-запросе.
+
+| Поле | Тип | Описание | Пример |
+|------|-----|----------|--------|
+| `audit_id` | UUID PK | ID записи аудита | `0194c5e0-be7a-7f00-8000-000000000006` |
+| `actor_id` | UUID | Кто выполнил (из `current_setting('app.current_user_id')`) | `0194c5e0-7b3a-7f00-8000-000000000001` |
+| `action` | VARCHAR(50) | Тип действия: `{table}.{operation}` | `users.created`, `roles.deleted` |
+| `resource_type` | VARCHAR(50) | Имя таблицы | `users`, `roles`, `sessions` |
+| `resource_id` | UUID | ID изменённой записи | `0194c5e0-7b3a-7f00-8000-000000000001` |
+| `tenant_id` | UUID | Тенант | `00000000-0000-0000-0000-000000000001` |
+| `ip_address` | INET | IP адрес (опционально) | `192.168.1.1` |
+| `result` | VARCHAR(10) | Результат | `success` / `failure` |
+| `metadata` | JSONB | Дополнительный контекст | `{"reason": "mass_delete"}` |
+| `created_at` | TIMESTAMPTZ | Время события | `2026-06-18T10:00:00Z` |
+
+### Триггеры
+
+| Таблица | Триггер | Аргументы (PK, tenant_id) |
+|---------|---------|--------------------------|
+| `users` | `trg_users_audit` | `user_id`, `tenant_id` |
+| `user_identities` | `trg_user_identities_audit` | `identity_id`, NULL |
+| `user_password` | `trg_user_password_audit` | `user_id`, NULL |
+| `user_sessions` | `trg_user_sessions_audit` | `session_id`, NULL |
+| `api_keys` | `trg_api_keys_audit` | `api_key_id`, `tenant_id` |
+| `roles` | `trg_roles_audit` | `role_id`, `tenant_id` |
+| `user_roles` | `trg_user_roles_audit` | `user_id`, NULL |
+
+Для таблиц с NULL tenant_id — значение подтягивается триггером из `users`.
+
+### Примеры использования в запросах
+
+```sql
+-- INSERT
+WITH _ctx AS (SELECT set_user('0194c5e0-7b3a-7f00-8000-000000000001'))
+INSERT INTO users (login, email_primary) VALUES ('john', 'john@example.com');
+
+-- UPDATE
+UPDATE users SET display_name = 'John Doe'
+FROM set_user('0194c5e0-7b3a-7f00-8000-000000000001')
+WHERE user_id = '0194c5e0-7b3a-7f00-8000-000000000001';
+
+-- DELETE
+DELETE FROM users
+WHERE user_id = '0194c5e0-7b3a-7f00-8000-000000000001'
+  AND set_user('0194c5e0-7b3a-7f00-8000-000000000001');
+```

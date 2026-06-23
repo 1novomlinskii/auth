@@ -1,0 +1,126 @@
+{% package query %}
+
+{% import "strings" %}
+
+{% func InsertRole(roleID, tenantID, name string, permissions []string, isSystem bool, description string) %}
+INSERT INTO roles (
+    role_id,
+    tenant_id,
+    name,
+    permissions,
+    is_system,
+    description,
+    created_at,
+    updated_at
+)
+VALUES (
+    {%s roleID %},
+    {%s tenantID %},
+    {%s name %},
+    '{{%s strings.Join(permissions, ",") %}}',
+    {% if isSystem %}TRUE{% else %}FALSE{% endif %},
+    {%s description %},
+    NOW(),
+    NULL
+)
+RETURNING created_at
+{% endfunc %}
+
+{% func SelectRoleByID(roleID string) %}
+SELECT role_id,
+       tenant_id,
+       name,
+       permissions,
+       is_system,
+       COALESCE(description, '') AS description,
+       created_at,
+       updated_at
+FROM roles
+WHERE role_id = {%s roleID %}
+{% endfunc %}
+
+{% func SelectRoleByName(tenantID, name string) %}
+SELECT role_id,
+       tenant_id,
+       name,
+       permissions,
+       is_system,
+       COALESCE(description, '') AS description,
+       created_at,
+       updated_at
+FROM roles
+WHERE tenant_id = {%s tenantID %}
+  AND name      = {%s name %}
+{% endfunc %}
+
+{% func SelectRoles(page, pageSize int) %}
+SELECT role_id,
+       tenant_id,
+       name,
+       permissions,
+       is_system,
+       COALESCE(description, '') AS description,
+       created_at,
+       updated_at
+FROM roles
+ORDER BY created_at DESC
+LIMIT {%d pageSize %}
+OFFSET {%d (page - 1) * pageSize %}
+{% endfunc %}
+
+{% func CountRoles() %}
+SELECT COUNT(*) AS total
+FROM roles
+{% endfunc %}
+
+{% func UpdateRole(roleID, name string, permissions []string, description string) %}
+UPDATE roles
+SET name        = {%s name %},
+    permissions = '{{%s strings.Join(permissions, ",") %}}',
+    description = {%s description %},
+    updated_at  = NOW()
+WHERE role_id = {%s roleID %}
+{% endfunc %}
+
+{% func DeleteRole(roleID string) %}
+DELETE FROM roles
+WHERE role_id  = {%s roleID %}
+  AND is_system = FALSE
+{% endfunc %}
+
+{% func AssignRoleToUser(userID, roleID string) %}
+INSERT INTO user_roles (user_id, role_id, assigned_at)
+VALUES ({%s userID %}, {%s roleID %}, NOW())
+ON CONFLICT (user_id, role_id) DO NOTHING
+{% endfunc %}
+
+{% func RevokeRoleFromUser(userID, roleID string) %}
+DELETE FROM user_roles
+WHERE user_id = {%s userID %}
+  AND role_id = {%s roleID %}
+{% endfunc %}
+
+{% func SelectUserRoles(userID string) %}
+SELECT r.role_id,
+       r.tenant_id,
+       r.name,
+       r.permissions,
+       r.is_system,
+       COALESCE(r.description, '') AS description,
+       r.created_at,
+       r.updated_at
+FROM roles r
+JOIN user_roles ur ON r.role_id = ur.role_id
+WHERE ur.user_id = {%s userID %}
+{% endfunc %}
+
+{% func CheckUserPermission(userID, permission string) %}
+SELECT EXISTS (
+    SELECT 1
+    FROM user_roles ur
+    JOIN roles r ON r.role_id = ur.role_id
+    CROSS JOIN LATERAL unnest(r.permissions) AS p(perm)
+    WHERE ur.user_id = {%s userID %}
+      AND p.perm     = {%s permission %}
+) AS has_permission
+{% endfunc %}

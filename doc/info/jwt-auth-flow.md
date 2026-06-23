@@ -20,7 +20,7 @@ Access token (JWT, RS256):
 {
   "sub": "user-uuid",
   "tenant_id": "...",
-  "role": "user",
+  "role": ["user","Manager"],
   "iat": 1712345678,
   "exp": 1712346578
 }

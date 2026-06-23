@@ -82,7 +82,7 @@
 
 | День | Задача | Время |
 |------|--------|-------|
-| 1 | **Миграция v1:** `users`, `user_identities`, `user_password_hash` | 2ч |
+| 1 | **Миграция v1:** `users`, `user_identities`, `user_password` | 2ч |
 | 2 | **Миграция v2:** `user_sessions`, `api_keys`, `roles`, `user_roles` | 2ч |
 | 3 | pgx pool: подключение, health check, конфигурация пула | 1.5ч |
 | 4 | UserRepository: `Create`, `GetByID`, `GetByEmail`, `GetByIdentity` | 2ч |

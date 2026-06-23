@@ -1,0 +1,90 @@
+{% package query %}
+
+{% import "strings" %}
+
+{% func InsertAPIKey(apiKeyID, tenantID, serviceName, keyPrefix, keyHash string, permissions []string, createdBy string, expiresAt *string) %}
+INSERT INTO api_keys (
+    api_key_id,
+    tenant_id,
+    service_name,
+    key_prefix,
+    key_hash,
+    permissions,
+    created_by,
+    expires_at,
+    is_active,
+    created_at
+)
+VALUES (
+    {%s apiKeyID %},
+    {%s tenantID %},
+    {%s serviceName %},
+    {%s keyPrefix %},
+    {%s keyHash %},
+    '{{%s strings.Join(permissions, ",") %}}',
+    {%s createdBy %},
+    {% if expiresAt != nil %}{%s *expiresAt %}::TIMESTAMPTZ{% else %}NULL{% endif %},
+    TRUE,
+    NOW()
+)
+RETURNING created_at
+{% endfunc %}
+
+{% func SelectAPIKeyByID(apiKeyID string) %}
+SELECT api_key_id,
+       tenant_id,
+       service_name,
+       key_prefix,
+       key_hash,
+       permissions,
+       created_by,
+       expires_at,
+       is_active,
+       created_at
+FROM api_keys
+WHERE api_key_id = {%s apiKeyID %}
+{% endfunc %}
+
+{% func SelectAPIKeyByHash(keyHash string) %}
+SELECT api_key_id,
+       tenant_id,
+       service_name,
+       key_prefix,
+       key_hash,
+       permissions,
+       created_by,
+       expires_at,
+       is_active,
+       created_at
+FROM api_keys
+WHERE key_hash  = {%s keyHash %}
+  AND is_active = TRUE
+{% endfunc %}
+
+{% func SelectAPIKeys(page, pageSize int) %}
+SELECT api_key_id,
+       tenant_id,
+       service_name,
+       key_prefix,
+       key_hash,
+       permissions,
+       created_by,
+       expires_at,
+       is_active,
+       created_at
+FROM api_keys
+ORDER BY created_at DESC
+LIMIT {%d pageSize %}
+OFFSET {%d (page - 1) * pageSize %}
+{% endfunc %}
+
+{% func CountAPIKeys() %}
+SELECT COUNT(*) AS total
+FROM api_keys
+{% endfunc %}
+
+{% func RevokeAPIKey(apiKeyID string) %}
+UPDATE api_keys
+SET is_active = FALSE
+WHERE api_key_id = {%s apiKeyID %}
+{% endfunc %}

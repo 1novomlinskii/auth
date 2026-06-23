@@ -77,3 +77,5 @@
 ## План развития
 
 Подробный план на 8 недель — [01-auth-service-plan.md](01-auth-service-plan.md).
+Dсе измениея по базе данных нужно отражать в [database-schema.md](doc/info/database-schema.md).
+Как будет работать  [jwt-auth-flow.md](doc/info/jwt-auth-flow.md).

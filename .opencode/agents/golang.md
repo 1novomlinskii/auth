@@ -17,16 +17,19 @@ permission:
     dba-sql-guide: allow
     "*": deny
   bash:
-    "go*": allow
-    "gofmt*": allow
-    "go vet*": allow
+    "echo *": allow
+    "which *": allow
+    "go *": allow
+    "gofmt *": allow
+    "go vet *": allow
     "go mod tidy": allow
-    "ls": allow
-    "grep": allow
-    "rg": allow
+    "ls *": allow
+    "grep *": allow
+    "rg *": allow
     "sudo*": deny
+    "sudo *": deny
     "rm": ask
-    "rm *": deny
+    "rm -rf *": deny
     "mkfs*": deny
     "dd*": deny
     "chmod 0*": deny

@@ -1,0 +1,2 @@
+# Placeholder for quicktemplate SQL query files.
+# Run `go generate ./internal/repository/pg/` to regenerate.
