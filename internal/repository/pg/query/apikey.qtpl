@@ -1,8 +1,17 @@
 {% package query %}
 
-{% import "strings" %}
-
-{% func InsertAPIKey(apiKeyID, tenantID, serviceName, keyPrefix, keyHash string, permissions []string, createdBy string, expiresAt *string) %}
+{% comment %}
+InsertAPIKey — создать API ключ
+$1 - apiKeyID     — UUID ключа
+$2 - tenantID     — UUID тенанта
+$3 - serviceName  — название сервиса
+$4 - keyPrefix    — префикс ключа
+$5 - keyHash      — хеш ключа
+$6 - permissions  — права доступа (строка, через запятую, формируется в caller)
+$7 - createdBy    — кем создан
+$8 - expiresAt    — срок истечения (TIMESTAMPTZ, NULL = бессрочно)
+{% endcomment %}
+{% func InsertAPIKey() %}
 INSERT INTO api_keys (
     api_key_id,
     tenant_id,
@@ -16,21 +25,25 @@ INSERT INTO api_keys (
     created_at
 )
 VALUES (
-    {%s apiKeyID %},
-    {%s tenantID %},
-    {%s serviceName %},
-    {%s keyPrefix %},
-    {%s keyHash %},
-    '{{%s strings.Join(permissions, ",") %}}',
-    {%s createdBy %},
-    {% if expiresAt != nil %}{%s *expiresAt %}::TIMESTAMPTZ{% else %}NULL{% endif %},
+    $1,
+    $2,
+    $3,
+    $4,
+    $5,
+    $6,
+    $7,
+    $8::TIMESTAMPTZ,
     TRUE,
     NOW()
 )
 RETURNING created_at
 {% endfunc %}
 
-{% func SelectAPIKeyByID(apiKeyID string) %}
+{% comment %}
+SelectAPIKeyByID
+$1 - apiKeyID — UUID ключа
+{% endcomment %}
+{% func SelectAPIKeyByID() %}
 SELECT api_key_id,
        tenant_id,
        service_name,
@@ -42,10 +55,14 @@ SELECT api_key_id,
        is_active,
        created_at
 FROM api_keys
-WHERE api_key_id = {%s apiKeyID %}
+WHERE api_key_id = $1
 {% endfunc %}
 
-{% func SelectAPIKeyByHash(keyHash string) %}
+{% comment %}
+SelectAPIKeyByHash
+$1 - keyHash — хеш ключа
+{% endcomment %}
+{% func SelectAPIKeyByHash() %}
 SELECT api_key_id,
        tenant_id,
        service_name,
@@ -57,11 +74,16 @@ SELECT api_key_id,
        is_active,
        created_at
 FROM api_keys
-WHERE key_hash  = {%s keyHash %}
+WHERE key_hash  = $1
   AND is_active = TRUE
 {% endfunc %}
 
-{% func SelectAPIKeys(page, pageSize int) %}
+{% comment %}
+SelectAPIKeys — список API ключей с пагинацией
+$1 - limit   — размер страницы (LIMIT)
+$2 - offset  — смещение (OFFSET)
+{% endcomment %}
+{% func SelectAPIKeys() %}
 SELECT api_key_id,
        tenant_id,
        service_name,
@@ -74,17 +96,25 @@ SELECT api_key_id,
        created_at
 FROM api_keys
 ORDER BY created_at DESC
-LIMIT {%d pageSize %}
-OFFSET {%d (page - 1) * pageSize %}
+LIMIT $1
+OFFSET $2
 {% endfunc %}
 
+{% comment %}
+CountAPIKeys — общее количество API ключей
+Параметров нет
+{% endcomment %}
 {% func CountAPIKeys() %}
 SELECT COUNT(*) AS total
 FROM api_keys
 {% endfunc %}
 
-{% func RevokeAPIKey(apiKeyID string) %}
+{% comment %}
+RevokeAPIKey — отзыв API ключа (is_active = FALSE)
+$1 - apiKeyID — UUID ключа
+{% endcomment %}
+{% func RevokeAPIKey() %}
 UPDATE api_keys
 SET is_active = FALSE
-WHERE api_key_id = {%s apiKeyID %}
+WHERE api_key_id = $1
 {% endfunc %}

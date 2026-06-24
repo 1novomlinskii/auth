@@ -33,19 +33,13 @@ type App struct {
 
 // New creates a new App with the given database pool.
 func New(cfg *config.Config, logger zerolog.Logger, pool *pgxpool.Pool) *App {
-	// Repositories
-	dbPool := pg.NewDBPool(pool)
-	userRepo := pg.NewUserRepo(dbPool)
-	sessionRepo := pg.NewSessionRepo(dbPool)
-	passwordRepo := pg.NewPasswordRepo(dbPool)
-	roleRepo := pg.NewRoleRepo(dbPool)
-	apikeyRepo := pg.NewAPIKeyRepo(dbPool)
+	repos := pg.NewRepositories(pool)
 
 	// Usecases
-	authUsecase := usecase.NewAuthUsecase(userRepo, sessionRepo, passwordRepo)
-	userUsecase := usecase.NewUserUsecase(userRepo)
-	roleUsecase := usecase.NewRoleUsecase(roleRepo)
-	apikeyUsecase := usecase.NewAPIKeyUsecase(apikeyRepo)
+	authUsecase := usecase.NewAuthUsecase(repos.UserRepo, repos.SessionRepo, repos.PasswordRepo)
+	userUsecase := usecase.NewUserUsecase(repos.UserRepo)
+	roleUsecase := usecase.NewRoleUsecase(repos.RoleRepo)
+	apikeyUsecase := usecase.NewAPIKeyUsecase(repos.APIKeyRepo)
 
 	// gRPC server
 	grpcSrv := grpcdelivery.NewServer()

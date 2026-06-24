@@ -33,3 +33,6 @@ go.work.sum
 
 bin/
 config.yml
+
+.opencode/
+.pi/

@@ -1,6 +1,16 @@
 {% package query %}
 
-{% func InsertUser(userID, tenantID, login, displayName, emailPrimary, locale, timezone string) %}
+{% comment %}
+InsertUser — создать пользователя
+$1 - userID        — UUID пользователя
+$2 - tenantID      — UUID тенанта
+$3 - login         — логин пользователя
+$4 - displayName   — отображаемое имя
+$5 - emailPrimary  — основной email
+$6 - locale        — локаль (например, ru_RU)
+$7 - timezone      — часовой пояс
+{% endcomment %}
+{% func InsertUser() %}
 INSERT INTO users (
     user_id,
     tenant_id,
@@ -14,13 +24,13 @@ INSERT INTO users (
     is_active
 )
 VALUES (
-    {%s userID %},
-    {%s tenantID %},
-    {%s login %},
-    {%s displayName %},
-    {%s emailPrimary %},
-    {%s locale %},
-    {%s timezone %},
+    $1,
+    $2,
+    $3,
+    $4,
+    $5,
+    $6,
+    $7,
     NOW(),
     NULL,
     TRUE
@@ -28,7 +38,11 @@ VALUES (
 RETURNING created_at
 {% endfunc %}
 
-{% func SelectUserByID(userID string) %}
+{% comment %}
+SelectUserByID — найти пользователя по ID
+$1 - userID — UUID пользователя
+{% endcomment %}
+{% func SelectUserByID() %}
 SELECT user_id,
        tenant_id,
        login,
@@ -40,10 +54,14 @@ SELECT user_id,
        created_at,
        updated_at
 FROM users
-WHERE user_id = {%s userID %}
+WHERE user_id = $1
 {% endfunc %}
 
-{% func SelectUserByLogin(login string) %}
+{% comment %}
+SelectUserByLogin — найти пользователя по логину
+$1 - login — логин пользователя
+{% endcomment %}
+{% func SelectUserByLogin() %}
 SELECT user_id,
        tenant_id,
        login,
@@ -55,10 +73,14 @@ SELECT user_id,
        created_at,
        updated_at
 FROM users
-WHERE login = {%s login %}
+WHERE login = $1
 {% endfunc %}
 
-{% func SelectUserByEmail(email string) %}
+{% comment %}
+SelectUserByEmail — найти пользователя по email
+$1 - email — email пользователя
+{% endcomment %}
+{% func SelectUserByEmail() %}
 SELECT user_id,
        tenant_id,
        login,
@@ -70,19 +92,31 @@ SELECT user_id,
        created_at,
        updated_at
 FROM users
-WHERE email_primary = {%s email %}
+WHERE email_primary = $1
 {% endfunc %}
 
-{% func UpdateUser(userID, displayName, locale, timezone string) %}
+{% comment %}
+UpdateUser — обновить данные пользователя
+$1 - displayName  — новое отображаемое имя
+$2 - locale       — новая локаль
+$3 - timezone     — новый часовой пояс
+$4 - userID       — UUID пользователя
+{% endcomment %}
+{% func UpdateUser() %}
 UPDATE users
-SET display_name = {%s displayName %},
-    locale       = {%s locale %},
-    timezone     = {%s timezone %},
+SET display_name = $1,
+    locale       = $2,
+    timezone     = $3,
     updated_at   = NOW()
-WHERE user_id = {%s userID %}
+WHERE user_id = $4
 {% endfunc %}
 
-{% func SelectUsers(page, pageSize int) %}
+{% comment %}
+SelectUsers — список пользователей с пагинацией
+$1 - limit   — размер страницы (LIMIT)
+$2 - offset  — смещение (OFFSET)
+{% endcomment %}
+{% func SelectUsers() %}
 SELECT user_id,
        tenant_id,
        login,
@@ -95,10 +129,14 @@ SELECT user_id,
        updated_at
 FROM users
 ORDER BY created_at DESC
-LIMIT {%d pageSize %}
-OFFSET {%d (page - 1) * pageSize %}
+LIMIT $1
+OFFSET $2
 {% endfunc %}
 
+{% comment %}
+CountUsers — общее количество пользователей
+Параметров нет
+{% endcomment %}
 {% func CountUsers() %}
 SELECT COUNT(*) AS total
 FROM users

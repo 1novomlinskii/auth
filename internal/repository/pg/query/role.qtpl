@@ -1,8 +1,15 @@
 {% package query %}
 
-{% import "strings" %}
-
-{% func InsertRole(roleID, tenantID, name string, permissions []string, isSystem bool, description string) %}
+{% comment %}
+InsertRole — создать роль
+$1 - roleID       — UUID роли
+$2 - tenantID     — UUID тенанта
+$3 - name         — название роли
+$4 - permissions  — права доступа (строка через запятую, формируется в caller)
+$5 - isSystem     — системная роль (bool, драйвер → TRUE/FALSE)
+$6 - description  — описание роли
+{% endcomment %}
+{% func InsertRole() %}
 INSERT INTO roles (
     role_id,
     tenant_id,
@@ -14,19 +21,23 @@ INSERT INTO roles (
     updated_at
 )
 VALUES (
-    {%s roleID %},
-    {%s tenantID %},
-    {%s name %},
-    '{{%s strings.Join(permissions, ",") %}}',
-    {% if isSystem %}TRUE{% else %}FALSE{% endif %},
-    {%s description %},
+    $1,
+    $2,
+    $3,
+    $4,
+    $5,
+    $6,
     NOW(),
     NULL
 )
 RETURNING created_at
 {% endfunc %}
 
-{% func SelectRoleByID(roleID string) %}
+{% comment %}
+SelectRoleByID
+$1 - roleID — UUID роли
+{% endcomment %}
+{% func SelectRoleByID() %}
 SELECT role_id,
        tenant_id,
        name,
@@ -36,10 +47,15 @@ SELECT role_id,
        created_at,
        updated_at
 FROM roles
-WHERE role_id = {%s roleID %}
+WHERE role_id = $1
 {% endfunc %}
 
-{% func SelectRoleByName(tenantID, name string) %}
+{% comment %}
+SelectRoleByName
+$1 - tenantID — UUID тенанта
+$2 - name     — название роли
+{% endcomment %}
+{% func SelectRoleByName() %}
 SELECT role_id,
        tenant_id,
        name,
@@ -49,11 +65,16 @@ SELECT role_id,
        created_at,
        updated_at
 FROM roles
-WHERE tenant_id = {%s tenantID %}
-  AND name      = {%s name %}
+WHERE tenant_id = $1
+  AND name      = $2
 {% endfunc %}
 
-{% func SelectRoles(page, pageSize int) %}
+{% comment %}
+SelectRoles — список ролей с пагинацией
+$1 - limit   — размер страницы (LIMIT)
+$2 - offset  — смещение (OFFSET)
+{% endcomment %}
+{% func SelectRoles() %}
 SELECT role_id,
        tenant_id,
        name,
@@ -64,43 +85,72 @@ SELECT role_id,
        updated_at
 FROM roles
 ORDER BY created_at DESC
-LIMIT {%d pageSize %}
-OFFSET {%d (page - 1) * pageSize %}
+LIMIT $1
+OFFSET $2
 {% endfunc %}
 
+{% comment %}
+CountRoles — общее количество ролей
+Параметров нет
+{% endcomment %}
 {% func CountRoles() %}
 SELECT COUNT(*) AS total
 FROM roles
 {% endfunc %}
 
-{% func UpdateRole(roleID, name string, permissions []string, description string) %}
+{% comment %}
+UpdateRole — обновить роль
+$1 - name        — новое название
+$2 - permissions — новые права (строка через запятую)
+$3 - description — новое описание
+$4 - roleID      — UUID роли
+{% endcomment %}
+{% func UpdateRole() %}
 UPDATE roles
-SET name        = {%s name %},
-    permissions = '{{%s strings.Join(permissions, ",") %}}',
-    description = {%s description %},
+SET name        = $1,
+    permissions = $2,
+    description = $3,
     updated_at  = NOW()
-WHERE role_id = {%s roleID %}
+WHERE role_id = $4
 {% endfunc %}
 
-{% func DeleteRole(roleID string) %}
+{% comment %}
+DeleteRole — удаление роли (только не системные)
+$1 - roleID — UUID роли
+{% endcomment %}
+{% func DeleteRole() %}
 DELETE FROM roles
-WHERE role_id  = {%s roleID %}
+WHERE role_id   = $1
   AND is_system = FALSE
 {% endfunc %}
 
-{% func AssignRoleToUser(userID, roleID string) %}
+{% comment %}
+AssignRoleToUser — назначить роль пользователю
+$1 - userID — UUID пользователя
+$2 - roleID — UUID роли
+{% endcomment %}
+{% func AssignRoleToUser() %}
 INSERT INTO user_roles (user_id, role_id, assigned_at)
-VALUES ({%s userID %}, {%s roleID %}, NOW())
+VALUES ($1, $2, NOW())
 ON CONFLICT (user_id, role_id) DO NOTHING
 {% endfunc %}
 
-{% func RevokeRoleFromUser(userID, roleID string) %}
+{% comment %}
+RevokeRoleFromUser — отозвать роль у пользователя
+$1 - userID — UUID пользователя
+$2 - roleID — UUID роли
+{% endcomment %}
+{% func RevokeRoleFromUser() %}
 DELETE FROM user_roles
-WHERE user_id = {%s userID %}
-  AND role_id = {%s roleID %}
+WHERE user_id = $1
+  AND role_id = $2
 {% endfunc %}
 
-{% func SelectUserRoles(userID string) %}
+{% comment %}
+SelectUserRoles — список ролей пользователя
+$1 - userID — UUID пользователя
+{% endcomment %}
+{% func SelectUserRoles() %}
 SELECT r.role_id,
        r.tenant_id,
        r.name,
@@ -111,16 +161,21 @@ SELECT r.role_id,
        r.updated_at
 FROM roles r
 JOIN user_roles ur ON r.role_id = ur.role_id
-WHERE ur.user_id = {%s userID %}
+WHERE ur.user_id = $1
 {% endfunc %}
 
-{% func CheckUserPermission(userID, permission string) %}
+{% comment %}
+CheckUserPermission — проверка разрешения у пользователя
+$1 - userID     — UUID пользователя
+$2 - permission — название разрешения
+{% endcomment %}
+{% func CheckUserPermission() %}
 SELECT EXISTS (
     SELECT 1
     FROM user_roles ur
     JOIN roles r ON r.role_id = ur.role_id
     CROSS JOIN LATERAL unnest(r.permissions) AS p(perm)
-    WHERE ur.user_id = {%s userID %}
-      AND p.perm     = {%s permission %}
+    WHERE ur.user_id = $1
+      AND p.perm     = $2
 ) AS has_permission
 {% endfunc %}
